@@ -1,0 +1,14 @@
+# Core pipeline (src/seller_cac.py, customer_ltv.py, segments.py, propensity.py)
+pandas>=2.3
+numpy>=1.26
+scikit-learn>=1.5
+kaggle>=1.6
+
+# Charts and dashboard (src/build_charts.py, build_dashboard.py, assemble_dashboard.py)
+matplotlib>=3.9
+plotly>=5.24
+
+# Build tooling only -- regenerating notebooks/PDFs, not needed to run the analysis
+nbformat>=5.10
+jupyter>=1.0
+reportlab>=4.2

@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Olist raw data (~73MB, no file over 100MB -- geolocation/reviews/sellers
+# CSVs dropped, unused by any script here) is committed directly, matching
+# the convention already used for the same dataset in ecommerce-rto-risk-model
+# -- clone and run with no Kaggle auth needed for that half of this project.
+data/raw/olist/*.zip
+data/raw/olist_marketing/*.zip
+
+# Santander raw data is ~510MB across 35 parquet parts -- too large to commit
+# to a portfolio git repo. Re-fetch with: python src/fetch_santander.py
+# (requires a free Kaggle account + API token, see reports/03_SOURCE_REGISTER.md)
+data/raw/santander/
