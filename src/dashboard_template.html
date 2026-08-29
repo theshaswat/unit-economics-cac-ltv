@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unit Economics: CAC, LTV &amp; Cross-Sell Propensity</title>
+<script type="text/javascript">
+__PLOTLYJS__
+</script>
+<style>
+  :root {
+    --sky:#2f8fd0; --amber:#e09b3d; --cyan:#66f4ff; --slate:#7d99aa;
+    --good:#0ca30c; --critical:#d03b3b;
+    --surface:#ffffff; --page:#eef5f9; --ink:#10222b; --ink2:#3d5563;
+    --muted:#7d99aa; --grid:#dbe7ee; --baseline:#adc2ce; --border:rgba(16,34,43,0.12);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin:0; background: var(--page); color: var(--ink);
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1760px; margin: 0 auto; padding: 22px 28px 28px; }
+  header {
+    display:flex; align-items:flex-end; justify-content:space-between; gap:24px;
+    padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--grid);
+  }
+  header .title h1 { margin:0 0 4px; font-size: 22px; font-weight:700; letter-spacing:-0.01em; }
+  header .title p { margin:0; color: var(--ink2); font-size: 13px; max-width: 720px; line-height:1.45; }
+  header .byline { text-align:right; font-size:12.5px; color: var(--muted); white-space:nowrap; }
+  header .byline a { color: var(--sky); text-decoration:none; font-weight:600; }
+  header .byline .name { color: var(--ink); font-weight:600; display:block; margin-bottom:2px; }
+
+  .kpi-row {
+    display:grid; grid-template-columns: repeat(6, 1fr); gap:12px; margin-bottom: 16px;
+  }
+  .kpi {
+    background: var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding: 12px 14px; border-top: 3px solid var(--sky);
+  }
+  .kpi.accent-amber { border-top-color: var(--amber); }
+  .kpi.accent-critical { border-top-color: var(--critical); }
+  .kpi .val { font-size: 21px; font-weight:700; color: var(--ink); line-height:1.1; }
+  .kpi .lbl { font-size: 11.5px; color: var(--muted); margin-top:4px; line-height:1.3; }
+
+  .grid {
+    display:grid; grid-template-columns: repeat(6, 1fr); gap:14px;
+    grid-auto-rows: min-content;
+  }
+  .tile {
+    background: var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding: 10px 12px 4px; overflow:hidden;
+  }
+  .c-channel { grid-column: 1 / 3; }
+  .c-funnel  { grid-column: 3 / 5; }
+  .c-repeat  { grid-column: 5 / 7; display:flex; flex-direction:column; justify-content:center; }
+  .c-cohorts { grid-column: 1 / 4; }
+  .c-propensity { grid-column: 4 / 7; }
+  .c-category { grid-column: 1 / 4; }
+  .c-state { grid-column: 4 / 7; }
+
+  .tile .js-plotly-plot { width:100% !important; }
+
+  .footnote-row {
+    display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-top:16px;
+  }
+  .fchip {
+    background: var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding: 11px 13px; font-size:12px; color: var(--ink2); line-height:1.4;
+  }
+  .fchip b { color: var(--ink); }
+  .fchip code { background: var(--page); padding:1px 4px; border-radius:4px; font-size:11px; }
+
+  footer {
+    text-align:center; padding: 18px 10px 4px; color: var(--muted); font-size: 11.5px;
+  }
+  footer a { color: var(--sky); text-decoration:none; }
+
+  @media (max-width: 1100px) {
+    .kpi-row { grid-template-columns: repeat(3, 1fr); }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .c-channel, .c-funnel, .c-repeat, .c-cohorts, .c-propensity, .c-category, .c-state {
+      grid-column: 1 / 3;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="title">
+      <h1>Unit Economics: CAC, LTV &amp; Cross-Sell Propensity</h1>
+      <p>Seller-acquisition funnel, customer cohort economics, freight-driven segment margins, and an
+         out-of-time cross-sell propensity model, across two public datasets. Where the data doesn't
+         support a metric, the metric isn't reported &mdash; see the notes below.</p>
+    </div>
+    <div class="byline">
+      <span class="name">Shaswat Sharma</span>
+      <a href="https://github.com/theshaswat" target="_blank">github.com/theshaswat</a>
+    </div>
+  </header>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="val">10.5%</div><div class="lbl">Seller-funnel win rate (842 / 8,000 MQLs)</div></div>
+    <div class="kpi accent-critical"><div class="val">55.0%</div><div class="lbl">Won sellers who never activated</div></div>
+    <div class="kpi accent-amber"><div class="val">3.0%</div><div class="lbl">Customer repeat-purchase share</div></div>
+    <div class="kpi"><div class="val">+10.8%</div><div class="lbl">Cohort margin growth, month 0 &rarr; 12</div></div>
+    <div class="kpi accent-critical"><div class="val">31.5%</div><div class="lbl">Electronics margin (freight 68.6% of price)</div></div>
+    <div class="kpi"><div class="val">0.85&ndash;1.00</div><div class="lbl">Propensity AUC, out-of-time, 16 products</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="tile c-channel">__CHANNEL__</div>
+    <div class="tile c-funnel">__FUNNEL__</div>
+    <div class="tile c-repeat">__REPEAT__</div>
+    <div class="tile c-cohorts">__COHORTS__</div>
+    <div class="tile c-propensity">__PROPENSITY__</div>
+    <div class="tile c-category">__CATEGORY__</div>
+    <div class="tile c-state">__STATE__</div>
+  </div>
+
+  <div class="footnote-row">
+    <div class="fchip"><b>No dollar CAC.</b> Olist's marketing spend by channel isn't publicly disclosed &mdash;
+      channels are ranked on win rate, activation and GMV per lead. See <code>docs/seller_cac_methodology.md</code>.</div>
+    <div class="fchip"><b>No payment fee or take-rate</b> is netted into any margin figure &mdash; neither is
+      disclosed by Olist. See <code>docs/margin_proxy_definition.md</code>.</div>
+    <div class="fchip"><b>120k-customer sample</b> of the ~950k Santander panel, for tractability &mdash;
+      transition rates were not re-validated against the full panel.</div>
+    <div class="fchip"><b>Two separate populations.</b> Seller-side (funnel) and customer-side
+      (e-commerce) data cover different people on the same platform. Nothing here models an
+      interaction between them.</div>
+  </div>
+
+  <footer>
+    Full methodology, source register, and limitations in the project README and <code>reports/</code>.
+    &middot; Shaswat Sharma &middot; <a href="https://github.com/theshaswat">github.com/theshaswat</a>
+  </footer>
+
+</div>
+</body>
+</html>
