@@ -6,7 +6,7 @@ from pathlib import Path
 from config import ROOT
 
 FRAG_DIR = ROOT / "outputs" / "chart_fragments"
-OUT = ROOT / "dashboards" / "p09_dashboard.html"
+OUT = ROOT / "dashboards" / "dashboard.html"
 
 CHART_NAMES = ["channel_score", "funnel", "cohorts", "repeat_share",
                "category_margin", "state_margin", "propensity"]

@@ -45,7 +45,7 @@ predicted well enough to run a cross-sell program?
 
 ## Deliverables
 
-- **Interactive dashboard:** [`dashboards/p09_dashboard.html`](dashboards/p09_dashboard.html) — open directly in any browser, no server needed
+- **Interactive dashboard:** [`dashboards/dashboard.html`](dashboards/dashboard.html) — open directly in any browser, no server needed
 - **Recommendation memo:** [`reports/01_RECOMMENDATION_MEMO.md`](reports/01_RECOMMENDATION_MEMO.md)
 - **Executive summary:** [`reports/00_EXECUTIVE_SUMMARY.md`](reports/00_EXECUTIVE_SUMMARY.md)
 - **Charts:** `outputs/charts/` — channel scorecard, funnel, cohort curves, repeat share, category/state margin, propensity AUC
