@@ -1,0 +1,10 @@
+# Language statistics
+#
+# The analysis is Python. The notebooks are the readable form of it rather than
+# the source of it, and the dashboard, chart fragments, PDFs and output tables
+# are built deliverables written by src/ - counting them reports this as an HTML
+# project when the code doing the work is Python.
+*.ipynb             linguist-documentation
+dashboards/*.html   linguist-generated
+outputs/**          linguist-generated
+reports/*.pdf       linguist-generated
