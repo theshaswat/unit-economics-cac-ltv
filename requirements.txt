@@ -1,6 +1,9 @@
 # Core pipeline (src/seller_cac.py, customer_ltv.py, segments.py, propensity.py)
 pandas>=2.3
 numpy>=1.26
+# pandas needs a parquet engine of its own; every intermediate panel in
+# data/final is parquet, so without this the pipeline fails on its first write.
+pyarrow>=16.0
 scikit-learn>=1.5
 kaggle>=1.6
 
