@@ -1,0 +1,96 @@
+name: verify
+
+# This project has two halves and only one of them can run here, which shapes
+# the whole workflow.
+#
+# The Olist half is fully self-contained: the raw CSVs are committed, so CI
+# rebuilds the seller-acquisition funnel, the customer cohort LTV panel and the
+# segment economics from them and requires every committed table and parquet
+# back byte for byte.
+#
+# The Santander half cannot run. Its raw data is ~510MB across 35 parquet parts
+# and is deliberately not committed (see .gitignore and
+# reports/03_SOURCE_REGISTER.md); src/fetch_santander.py pulls it from Kaggle
+# with credentials CI does not have. So src/propensity.py is skipped, and the
+# two artifacts it produces are the two this workflow cannot verify. That is a
+# real gap and it is named here rather than papered over with a mocked fetch.
+#
+# Three kinds of output are rebuilt but deliberately not compared:
+#   - outputs/charts/*.png -- matplotlib renders text differently on Linux than
+#     on macOS, so two correct builds differ.
+#   - outputs/chart_fragments/*.html and dashboards/dashboard.html -- plotly
+#     writes a fresh random div id into every chart, so these are not byte
+#     stable even twice on the same machine. Rebuilding them is still worth it
+#     as a smoke test that the dashboard assembles at all.
+# The reports are compared: all three PDFs are pure text with no embedded image
+# (checked with pdfimages), so they reproduce anywhere once src/build_pdf.py
+# sets rl_config.invariant.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Rebuild the Olist half from the committed raw CSVs
+        working-directory: src
+        run: |
+          python seller_cac.py
+          python customer_ltv.py
+          python segments.py
+
+      - name: Committed tables and panels reproduce exactly
+        # santander_panel_sample.parquet and cross_sell_ranked_list_full.parquet
+        # are excluded: propensity.py cannot run without the Kaggle data.
+        run: |
+          git diff --exit-code -- outputs/tables \
+            ':(exclude)data/final/santander_panel_sample.parquet' \
+            ':(exclude)data/final/cross_sell_ranked_list_full.parquet' \
+            data/final
+
+      - name: The headline finding still holds
+        # The project's headline is that winning a seller is not the same as
+        # activating one. If that funnel ever changes shape, this should fail
+        # rather than quietly rewriting the conclusion in the reports.
+        run: |
+          python - <<'PY'
+          import sys
+          import pandas as pd
+          f = pd.read_parquet("data/final/seller_funnel.parquet")
+          leads, won, activated = len(f), int(f["won"].sum()), int(f["activated"].sum())
+          never = won - activated
+          print(f"{leads:,} leads -> {won:,} won -> {activated:,} activated "
+                f"({never:,} never sold, {100 * never / won:.1f}% of won)")
+          expected = {"leads": 8000, "won": 842, "activated": 379}
+          actual = {"leads": leads, "won": won, "activated": activated}
+          if actual != expected:
+              sys.exit(f"funnel changed: expected {expected}, got {actual}")
+          if round(100 * never / won, 1) != 55.0:
+              sys.exit(f"the 55% never-sold figure moved to {100 * never / won:.1f}%")
+          print("ok: 8,000 -> 842 -> 379, and 55.0% of won sellers never sold")
+          PY
+
+      - name: Charts, dashboard and reports still build
+        working-directory: src
+        run: |
+          python build_charts.py
+          python build_dashboard.py
+          python assemble_dashboard.py
+          python build_pdf.py
+
+      - name: Committed reports reproduce exactly
+        run: git diff --exit-code -- reports

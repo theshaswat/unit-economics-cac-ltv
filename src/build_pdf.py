@@ -11,6 +11,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from reportlab import rl_config
+
+# Reproducible build: without this reportlab stamps a wall-clock CreationDate
+# and a random document ID into every PDF, so two builds of identical inputs
+# differ in bytes and CI cannot check the committed reports against a rebuild.
+rl_config.invariant = 1
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.units import inch
 from reportlab.lib import colors
