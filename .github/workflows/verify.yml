@@ -25,6 +25,14 @@ name: verify
 # The reports are compared: all three PDFs are pure text with no embedded image
 # (checked with pdfimages), so they reproduce anywhere once src/build_pdf.py
 # sets rl_config.invariant.
+#
+# The parquet panels are compared by content rather than by bytes. Parquet
+# stamps the writing library's version into every file -- the committed ones
+# say "parquet-cpp-arrow version 21.0.0" -- so a rebuild on a runner with a
+# different pyarrow differs in bytes while holding identical data. Comparing
+# the frames catches the thing that would actually matter, a changed number,
+# and does not fail on a dependency bump. The CSVs in outputs/tables have no
+# such header and are still compared byte for byte.
 
 on:
   push:
@@ -46,6 +54,11 @@ jobs:
       - name: Install
         run: pip install -r requirements.txt
 
+      - name: Keep a copy of the committed panels before anything overwrites them
+        run: |
+          mkdir -p /tmp/committed
+          cp data/final/*.parquet /tmp/committed/
+
       - name: Rebuild the Olist half from the committed raw CSVs
         working-directory: src
         run: |
@@ -53,14 +66,40 @@ jobs:
           python customer_ltv.py
           python segments.py
 
-      - name: Committed tables and panels reproduce exactly
+      - name: Committed tables reproduce byte for byte
+        run: git diff --exit-code -- outputs/tables
+
+      - name: Committed panels hold the same data
         # santander_panel_sample.parquet and cross_sell_ranked_list_full.parquet
-        # are excluded: propensity.py cannot run without the Kaggle data.
+        # are skipped: propensity.py cannot run without the Kaggle data, so the
+        # rebuild never touches them and there is nothing to compare them to.
         run: |
-          git diff --exit-code -- outputs/tables \
-            ':(exclude)data/final/santander_panel_sample.parquet' \
-            ':(exclude)data/final/cross_sell_ranked_list_full.parquet' \
-            data/final
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          import pandas as pd
+
+          skip = {"santander_panel_sample.parquet", "cross_sell_ranked_list_full.parquet"}
+          failed = []
+          for rebuilt in sorted(Path("data/final").glob("*.parquet")):
+              if rebuilt.name in skip:
+                  print(f"skip  {rebuilt.name} (Santander half, not rebuilt here)")
+                  continue
+              committed = Path("/tmp/committed") / rebuilt.name
+              if not committed.exists():
+                  failed.append(f"{rebuilt.name}: rebuilt but was never committed")
+                  continue
+              try:
+                  pd.testing.assert_frame_equal(
+                      pd.read_parquet(committed), pd.read_parquet(rebuilt),
+                      check_exact=False, rtol=1e-9)
+              except AssertionError as exc:
+                  failed.append(f"{rebuilt.name}: {str(exc).splitlines()[0]}")
+              else:
+                  print(f"ok    {rebuilt.name} ({len(pd.read_parquet(rebuilt)):,} rows)")
+          if failed:
+              sys.exit("committed panels no longer match a rebuild:\n  " + "\n  ".join(failed))
+          PY
 
       - name: The headline finding still holds
         # The project's headline is that winning a seller is not the same as
