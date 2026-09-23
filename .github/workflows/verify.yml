@@ -79,6 +79,21 @@ jobs:
           from pathlib import Path
           import pandas as pd
 
+
+          def read(path):
+              # pandas 2 reads parquet timestamps back as datetime64[ns] and
+              # pandas 3 as datetime64[us]. Same instants, different unit, and
+              # assert_frame_equal calls that an attribute mismatch. Pinning
+              # every column to nanoseconds neutralises that one known
+              # difference and leaves every other dtype checked, so a column
+              # that genuinely changed type is still caught.
+              df = pd.read_parquet(path)
+              for col in df.columns:
+                  if pd.api.types.is_datetime64_any_dtype(df[col]):
+                      df[col] = df[col].astype("datetime64[ns]")
+              return df
+
+
           skip = {"santander_panel_sample.parquet", "cross_sell_ranked_list_full.parquet"}
           failed = []
           for rebuilt in sorted(Path("data/final").glob("*.parquet")):
@@ -89,14 +104,13 @@ jobs:
               if not committed.exists():
                   failed.append(f"{rebuilt.name}: rebuilt but was never committed")
                   continue
+              a, b = read(committed), read(rebuilt)
               try:
-                  pd.testing.assert_frame_equal(
-                      pd.read_parquet(committed), pd.read_parquet(rebuilt),
-                      check_exact=False, rtol=1e-9)
+                  pd.testing.assert_frame_equal(a, b, check_exact=False, rtol=1e-9)
               except AssertionError as exc:
                   failed.append(f"{rebuilt.name}: {str(exc).splitlines()[0]}")
               else:
-                  print(f"ok    {rebuilt.name} ({len(pd.read_parquet(rebuilt)):,} rows)")
+                  print(f"ok    {rebuilt.name} ({len(b):,} rows, {len(b.columns)} columns)")
           if failed:
               sys.exit("committed panels no longer match a rebuild:\n  " + "\n  ".join(failed))
           PY
